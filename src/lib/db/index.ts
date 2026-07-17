@@ -17,5 +17,4 @@ const sql = neon(getDatabaseUrl())
 /** Shared Drizzle client (Neon HTTP). Safe for serverless / TanStack Start. */
 export const db = drizzle({ client: sql, schema })
 
-export type Database = typeof db
 export { schema }

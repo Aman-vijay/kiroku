@@ -7,12 +7,34 @@ Log your day as free text, pick a themed card template (chibi, pixel, minimal, a
 ## Stack
 
 - **TanStack Start** — full-stack React (SSR, server functions, file routing)
-- **Tailwind CSS v4** + **shadcn/ui** — styling
+- **Tailwind CSS v4** — styling (custom product primitives)
 - **Better Auth** — authentication (email + Google)
-- **Neon** + **Drizzle** — database (Phase 1)
-- **Zustand** / **TanStack Query** — client state (upcoming)
+- **Neon** + **Drizzle** — database
+- **Zod** — validation
 
-See [`docs/PRODUCT_PLAN.md`](./docs/PRODUCT_PLAN.md) for the full phased plan.
+## Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | **Start here** — phase status + todo board |
+| [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) | What changed each phase |
+| [`docs/phases/PHASE_02_ENTRIES.md`](./docs/phases/PHASE_02_ENTRIES.md) | Entries phase plan |
+| [`docs/PRODUCT_PLAN.md`](./docs/PRODUCT_PLAN.md) | Full product vision & stack decisions |
+| [`PRODUCT.md`](./PRODUCT.md) | Impeccable product context (who / why / register) |
+| [`DESIGN.md`](./DESIGN.md) | Impeccable visual system (tokens + rules) |
+
+### Impeccable (design skill)
+
+Installed via [impeccable.style](https://impeccable.style/tutorials/getting-started/). Agent commands (in a supported harness):
+
+```text
+/impeccable init
+/impeccable polish the login page
+/impeccable critique the landing page
+/impeccable audit src/
+```
+
+CLI detector: `npx impeccable detect src/`
 
 ## Getting started
 
@@ -34,40 +56,15 @@ npm run test    # vitest
 
 ```text
 src/
-  components/
-    layout/          # Header, Footer, ThemeToggle
-    ui/              # shadcn primitives
-  features/
-    auth/            # auth UI & helpers
-    entries/         # daily progress domain
-    templates/       # card templates
-    share/           # export + public links
-  lib/
-    auth.ts          # Better Auth server
-    auth-client.ts   # Better Auth client
-    constants.ts
-    db/              # Drizzle + Neon
-    validations/     # Zod schemas
-    utils.ts
-  server/            # createServerFn modules
-  stores/            # Zustand
-  hooks/
-  types/
-  routes/            # file-based routes only
-    api/auth/
-    app/             # authenticated app shell
-    index.tsx        # landing
-    login.tsx
+  components/layout/   # Header, Footer, ThemeToggle, AuthHeader
+  features/entries/    # forms, list, card templates, streak
+  lib/                 # auth, db, validations, templates, constants
+  server/              # createServerFn modules
+  routes/              # file-based routes only
   styles.css
 ```
 
-**Convention:** routes stay thin; business UI lives under `features/*`; shared primitives under `components/*`.
-
-## shadcn
-
-```bash
-npx shadcn@latest add button
-```
+**Convention:** routes stay thin; domain UI under `features/*`; chrome under `components/*`.
 
 ## License
 

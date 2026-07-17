@@ -1,11 +1,8 @@
 export const SITE_NAME = 'Kiroku'
 export const SITE_TAGLINE = 'Daily progress, beautifully shared'
 export const SITE_DESCRIPTION =
-  'Log your day, pick a template card, and share your progress on social media.'
-export const SITE_URL = 'https://kiroku.app'
+  'Log free-text progress for the day, frame it on a template card, and share a portrait image when you are ready.'
 
-/** Share card export size (portrait / Stories) */
-export const CARD_EXPORT = {
-  width: 1080,
-  height: 1350,
-} as const
+/** Portrait share card canvas (Stories). UI scales with CSS. */
+export const CARD_W = 1080
+export const CARD_H = 1350

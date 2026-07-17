@@ -3,64 +3,81 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from '#/lib/constants'
 
 export const Route = createFileRoute('/')({ component: LandingPage })
 
+const steps = [
+  {
+    title: 'Write your day',
+    body: 'A free-text note for today — no rigid forms, no checklist tax.',
+  },
+  {
+    title: 'Shape a card',
+    body: 'Chibi, pixel, or minimal templates turn the note into a shareable frame.',
+  },
+  {
+    title: 'Share once',
+    body: 'Export a 1080×1350 portrait PNG or pass an unlisted link.',
+  },
+] as const
+
 function LandingPage() {
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-
-        <p className="island-kicker mb-3">{SITE_NAME}</p>
-        <h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
+    <main className="page-wrap px-4 pb-16 pt-12 sm:pt-16">
+      <section className="fade-in max-w-2xl">
+        <p className="mb-3 text-sm font-medium text-[var(--muted)]">
+          {SITE_NAME}
+        </p>
+        <h1 className="mb-4 text-[clamp(2rem,4.5vw,2.75rem)] font-semibold leading-[1.12] tracking-[-0.02em] text-[var(--ink)]">
           {SITE_TAGLINE}
         </h1>
-        <p className="mb-8 max-w-2xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
-          {SITE_DESCRIPTION} Choose chibi, pixel, or minimal card templates and
-          export a portrait card ready for Stories and social.
+        <p className="mb-8 max-w-[42rem] text-base leading-relaxed text-[var(--muted)] sm:text-lg">
+          {SITE_DESCRIPTION} Built for the end of the day — write, frame, share.
         </p>
 
         <div className="flex flex-wrap gap-3">
-          <Link
-            to="/login"
-            className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
-          >
+          <Link to="/login" className="btn btn-primary">
             Get started
           </Link>
-          <Link
-            to="/app"
-            className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
-          >
+          <Link to="/app" className="btn btn-secondary">
             Open dashboard
           </Link>
         </div>
       </section>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-3">
-        {[
-          [
-            'Write your day',
-            'Capture free-text progress in seconds — no rigid forms.',
-          ],
-          [
-            'Pick a card',
-            'Chibi anime, 2D pixel, minimal ink, and more templates.',
-          ],
-          [
-            'Share it',
-            'Download a 1080×1350 portrait PNG or copy an unlisted link.',
-          ],
-        ].map(([title, desc], index) => (
-          <article
-            key={title}
-            className="island-shell feature-card rise-in rounded-2xl p-5"
-            style={{ animationDelay: `${index * 90 + 80}ms` }}
-          >
-            <h2 className="mb-2 text-base font-semibold text-[var(--sea-ink)]">
-              {title}
+      <section className="mt-14 border-t border-[var(--line)] pt-10">
+        <h2 className="mb-6 text-sm font-semibold tracking-tight text-[var(--ink)]">
+          How it works
+        </h2>
+        <ol className="m-0 grid list-none gap-8 p-0 sm:grid-cols-3 sm:gap-6">
+          {steps.map((step, index) => (
+            <li key={step.title} className="fade-in min-w-0">
+              <p className="mb-2 text-xs font-semibold tabular-nums text-[var(--primary)]">
+                {String(index + 1).padStart(2, '0')}
+              </p>
+              <h3 className="mb-1.5 text-base font-semibold text-[var(--ink)]">
+                {step.title}
+              </h3>
+              <p className="m-0 text-sm leading-relaxed text-[var(--muted)]">
+                {step.body}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="panel-muted mt-14 p-6 sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-md">
+            <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">
+              Ready for today’s note?
             </h2>
-            <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
-          </article>
-        ))}
+            <p className="m-0 text-sm text-[var(--muted)]">
+              Sign in with email or Google. Your entries stay private until you
+              choose to share.
+            </p>
+          </div>
+          <Link to="/login" className="btn btn-accent shrink-0">
+            Sign in
+          </Link>
+        </div>
       </section>
     </main>
   )

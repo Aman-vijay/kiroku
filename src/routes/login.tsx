@@ -2,7 +2,6 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { authClient } from '#/lib/auth-client'
 import { SITE_NAME } from '#/lib/constants'
-import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -69,74 +68,67 @@ function LoginPage() {
   }
 
   return (
-    <main className="page-wrap px-4 py-16">
-      <section className="island-shell mx-auto max-w-md rounded-2xl p-8">
-        <p className="island-kicker mb-2">Welcome</p>
-        <h1 className="mb-2 text-2xl font-bold text-[var(--sea-ink)]">
-          {mode === 'sign-in' ? `Sign in to ${SITE_NAME}` : `Join ${SITE_NAME}`}
+    <main className="page-wrap flex justify-center px-4 py-14 sm:py-20">
+      <section className="panel fade-in w-full max-w-md p-7 sm:p-8">
+        <p className="mb-1 text-sm font-medium text-[var(--muted)]">
+          {SITE_NAME}
+        </p>
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-[var(--ink)]">
+          {mode === 'sign-in' ? 'Sign in' : 'Create account'}
         </h1>
-        <p className="mb-6 text-sm text-[var(--sea-ink-soft)]">
-          Email and password or continue with Google. Sessions are stored in
-          Neon via Better Auth + Drizzle.
+        <p className="mb-6 text-sm leading-relaxed text-[var(--muted)]">
+          Email and password, or continue with Google.
         </p>
 
-        <div className="mb-5 flex rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-1">
+        <div className="segmented mb-5" role="tablist" aria-label="Auth mode">
           {(['sign-in', 'sign-up'] as const).map((value) => (
             <button
               key={value}
               type="button"
+              role="tab"
+              aria-selected={mode === value}
+              data-active={mode === value}
+              className="segmented-item"
               onClick={() => {
                 setMode(value)
                 setError(null)
               }}
-              className={cn(
-                'flex-1 rounded-full px-3 py-2 text-sm font-semibold transition',
-                mode === value
-                  ? 'bg-[rgba(79,184,178,0.2)] text-[var(--lagoon-deep)]'
-                  : 'text-[var(--sea-ink-soft)]',
-              )}
             >
               {value === 'sign-in' ? 'Sign in' : 'Sign up'}
             </button>
           ))}
         </div>
 
-        <form className="space-y-3" onSubmit={handleEmailAuth}>
+        <form className="space-y-3.5" onSubmit={handleEmailAuth}>
           {mode === 'sign-up' ? (
-            <label className="block text-sm">
-              <span className="mb-1 block font-medium text-[var(--sea-ink)]">
-                Name
-              </span>
+            <label className="block">
+              <span className="field-label">Name</span>
               <input
                 type="text"
                 autoComplete="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-[var(--line)] bg-white/70 px-3 py-2 text-[var(--sea-ink)] outline-none ring-[var(--lagoon)] focus:ring-2 dark:bg-black/20"
+                className="field-input"
                 placeholder="Your name"
               />
             </label>
           ) : null}
 
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[var(--sea-ink)]">
-              Email
-            </span>
+          <label className="block">
+            <span className="field-label">Email</span>
             <input
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] bg-white/70 px-3 py-2 text-[var(--sea-ink)] outline-none ring-[var(--lagoon)] focus:ring-2 dark:bg-black/20"
+              className="field-input"
               placeholder="you@example.com"
             />
           </label>
 
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[var(--sea-ink)]">
-              Password
-            </span>
+          <label className="block">
+            <span className="field-label">Password</span>
             <input
               type="password"
               required
@@ -146,16 +138,13 @@ function LoginPage() {
               }
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] bg-white/70 px-3 py-2 text-[var(--sea-ink)] outline-none ring-[var(--lagoon)] focus:ring-2 dark:bg-black/20"
+              className="field-input"
               placeholder="At least 8 characters"
             />
           </label>
 
           {error ? (
-            <p
-              role="alert"
-              className="rounded-xl border border-red-300/60 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
-            >
+            <p role="alert" className="field-error">
               {error}
             </p>
           ) : null}
@@ -163,7 +152,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.18)] px-4 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] transition hover:bg-[rgba(79,184,178,0.28)] disabled:opacity-60"
+            className="btn btn-primary w-full"
           >
             {pending
               ? 'Please wait…'
@@ -173,7 +162,7 @@ function LoginPage() {
           </button>
         </form>
 
-        <div className="my-5 flex items-center gap-3 text-xs text-[var(--sea-ink-soft)]">
+        <div className="my-5 flex items-center gap-3 text-xs text-[var(--muted)]">
           <span className="h-px flex-1 bg-[var(--line)]" />
           or
           <span className="h-px flex-1 bg-[var(--line)]" />
@@ -183,16 +172,13 @@ function LoginPage() {
           type="button"
           disabled={pending}
           onClick={() => void handleGoogle()}
-          className="w-full rounded-full border border-[var(--line)] bg-white/60 px-4 py-2.5 text-sm font-semibold text-[var(--sea-ink)] transition hover:bg-white/90 disabled:opacity-60 dark:bg-black/20"
+          className="btn btn-secondary w-full"
         >
           Continue with Google
         </button>
 
         <p className="mt-6 text-center text-sm">
-          <Link
-            to="/"
-            className="font-semibold text-[var(--lagoon-deep)] no-underline"
-          >
+          <Link to="/" className="font-medium text-[var(--primary)] no-underline">
             ← Back home
           </Link>
         </p>
