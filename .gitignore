@@ -1,14 +1,31 @@
+# dependencies
 node_modules
-.DS_Store
+
+# build
 dist
 dist-ssr
-*.local
-.env
-.nitro
-.tanstack
-.wrangler
 .output
+.nitro
 .vinxi
+.wrangler
+
+# env / local
+.env
+.env.*
+!.env.example
+*.local
+
+# tooling
+.DS_Store
+.tanstack
+.content-collections
 __unconfig*
 todos.json
-.content-collections
+
+# agent / editor
+.codex/
+.impeccable/
+.cursor/
+.vscode/
+*.swp
+*.swo

@@ -1,70 +1,104 @@
 # Kiroku
 
-Daily progress, beautifully shared.
+**Daily progress, beautifully shared.**
 
-Log your day as free text, pick a themed card template (chibi, pixel, minimal, and more), and share a portrait card on social media.
+Log free-text notes for the day, frame them on a themed portrait card, and export or share a private link.
+
+---
+
+## Features
+
+- **One entry per day** — title + free text, saved to your account
+- **Card templates** — Minimal, Chibi, and Pixel
+- **Live preview** — 1080×1350 canvas scaled in the UI
+- **Export** — download PNG or use the Web Share API
+- **Unlisted links** — optional share URL (`/s/…`), no public feed
+- **Auth** — email/password and Google via Better Auth
+
+---
 
 ## Stack
 
-- **TanStack Start** — full-stack React (SSR, server functions, file routing)
-- **Tailwind CSS v4** — styling (custom product primitives)
-- **Better Auth** — authentication (email + Google)
-- **Neon** + **Drizzle** — database
-- **Zod** — validation
+| Layer | Choice |
+|-------|--------|
+| App | [TanStack Start](https://tanstack.com/start) (React 19, SSR, server functions) |
+| DB | [Neon](https://neon.tech) Postgres + [Drizzle](https://orm.drizzle.team) |
+| Auth | [Better Auth](https://www.better-auth.com) |
+| Styles | Tailwind CSS v4 |
+| Validation | Zod |
+| Export | modern-screenshot |
 
-## Docs
+---
 
-| Doc | Purpose |
-|-----|---------|
-| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | **Start here** — phase status + todo board |
-| [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) | What changed each phase |
-| [`docs/phases/PHASE_02_ENTRIES.md`](./docs/phases/PHASE_02_ENTRIES.md) | Entries phase plan |
-| [`docs/PRODUCT_PLAN.md`](./docs/PRODUCT_PLAN.md) | Full product vision & stack decisions |
-| [`PRODUCT.md`](./PRODUCT.md) | Impeccable product context (who / why / register) |
-| [`DESIGN.md`](./DESIGN.md) | Impeccable visual system (tokens + rules) |
-
-### Impeccable (design skill)
-
-Installed via [impeccable.style](https://impeccable.style/tutorials/getting-started/). Agent commands (in a supported harness):
-
-```text
-/impeccable init
-/impeccable polish the login page
-/impeccable critique the landing page
-/impeccable audit src/
-```
-
-CLI detector: `npx impeccable detect src/`
-
-## Getting started
+## Quick start
 
 ```bash
+git clone <repo-url> kiroku
+cd kiroku
 npm install
+cp .env.example .env.local
+```
+
+Fill in `.env.local`:
+
+| Variable | Notes |
+|----------|--------|
+| `DATABASE_URL` | Neon connection string |
+| `BETTER_AUTH_SECRET` | Long random secret |
+| `BETTER_AUTH_URL` | e.g. `http://localhost:3000` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth app |
+
+Push schema (if needed):
+
+```bash
+npm run db:push
+# or apply SQL under drizzle/
+```
+
+Run:
+
+```bash
 npm run dev
 ```
 
-App runs at [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
-Copy `.env.example` to `.env.local` and fill values as you implement Phase 1.
+---
 
-```bash
-npm run build   # production build
-npm run test    # vitest
-```
+## Scripts
 
-## Project structure
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server (port 3000) |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run test` | Unit tests (Vitest) |
+| `npm run db:generate` | Generate Drizzle migrations |
+| `npm run db:push` | Push schema to Neon |
+| `npm run db:studio` | Drizzle Studio |
+| `npm run db:test` | Connectivity check (`NEON_OK`) |
+
+---
+
+## Project layout
 
 ```text
 src/
-  components/layout/   # Header, Footer, ThemeToggle, AuthHeader
-  features/entries/    # forms, list, card templates, streak
-  lib/                 # auth, db, validations, templates, constants
-  server/              # createServerFn modules
-  routes/              # file-based routes only
+  components/layout/   # chrome (header, footer, theme, auth)
+  features/entries/    # forms, cards, share, streak
+  lib/                 # auth, db, zod, templates
+  server/              # createServerFn handlers
+  routes/              # file-based routes
+    app/               # authenticated app
+    s.$slug.tsx        # public unlisted share
+    api/auth/          # Better Auth handler
   styles.css
+drizzle/               # SQL migrations
 ```
 
-**Convention:** routes stay thin; domain UI under `features/*`; chrome under `components/*`.
+Routes stay thin; domain UI lives under `features/*`.
+
+---
 
 ## License
 
