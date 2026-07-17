@@ -45,10 +45,6 @@ function toDTO(row: typeof entry.$inferSelect): EntryDTO {
   }
 }
 
-function newSlug() {
-  return crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-}
-
 export const listEntries = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => listEntriesQuerySchema.parse(data ?? {}))
   .handler(async ({ data }) => {
@@ -182,7 +178,7 @@ export const enableEntryShare = createServerFn({ method: 'POST' })
 
     if (!existing) throw new Error('Entry not found')
 
-    const shareSlug = existing.shareSlug ?? newSlug()
+    const shareSlug = existing.shareSlug ?? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
     const [row] = await db
       .update(entry)
       .set({
