@@ -3,8 +3,14 @@
 **Product vision:** Let people log a day’s progress, turn it into a beautiful themed card (chibi anime, 2D pixel, and more), save it, and share it on social media.
 
 **Codename / repo:** `kiroku` (記録 — “record / log”)  
-**Status:** Initial TanStack Start scaffold  
-**Last updated:** 2026-07-15
+**Status:** Phase 5 complete (polish + card dashboard) → **Phase 6 next**  
+**Last updated:** 2026-07-17  
+
+**Living trackers (use these day-to-day):**
+
+- [ROADMAP.md](./ROADMAP.md) — status board + master todos  
+- [CHANGELOG.md](./CHANGELOG.md) — what shipped each phase  
+- [phases/PHASE_02_ENTRIES.md](./phases/PHASE_02_ENTRIES.md) — full next-phase plan
 
 ---
 

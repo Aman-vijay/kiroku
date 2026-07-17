@@ -8,6 +8,27 @@
       "when": 1784133727622,
       "tag": "0000_soft_lockheed",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784271571076,
+      "tag": "0001_elite_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784272379425,
+      "tag": "0002_glossy_talisman",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784272783334,
+      "tag": "0003_sticky_talon",
+      "breakpoints": true
     }
   ]
 }
