@@ -330,6 +330,15 @@ code {
   border-radius: 8px;
 }
 
+/* Bare stage: parent wrapper owns chrome (landing hero, demo) */
+.card-stage--bare {
+  max-width: none;
+  margin-inline: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 .card-canvas {
   width: 1080px;
   height: 1350px;
