@@ -21,6 +21,7 @@
     "@react-three/fiber": "^9.6.1",
     "@tabler/icons-react": "^3.45.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/nitro-v2-vite-plugin": "^1.155.0",
     "@tanstack/react-devtools": "^0.7.0",
     "@tanstack/react-router": "^1.132.0",
     "@tanstack/react-router-devtools": "^1.132.0",
