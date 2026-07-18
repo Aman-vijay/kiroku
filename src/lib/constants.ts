@@ -6,3 +6,6 @@ export const SITE_DESCRIPTION =
 /** Portrait share card canvas (Stories). UI scales with CSS. */
 export const CARD_W = 1080
 export const CARD_H = 1350
+
+/** Length of the public share slug (hex chars from UUID). */
+export const SHARE_SLUG_LENGTH = 12

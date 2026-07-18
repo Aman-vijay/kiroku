@@ -1,4 +1,5 @@
-import { Link } from '@tanstack/react-router'
+import { useEffect } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
 
 export function RoutePending() {
   return (
@@ -13,6 +14,16 @@ export function RoutePending() {
 }
 
 export function RouteError({ error }: { error: Error }) {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (error.name === 'UnauthorizedError') {
+      navigate({ to: '/login', replace: true })
+    }
+  }, [error, navigate])
+
+  if (error.name === 'UnauthorizedError') return null
+
   return (
     <main className="page-wrap px-4 py-16 text-center" role="alert">
       <h1 className="text-xl font-semibold text-[var(--ink)]">
@@ -35,7 +46,7 @@ export function RouteNotFound() {
     <main className="page-wrap px-4 py-16 text-center">
       <h1 className="text-xl font-semibold text-[var(--ink)]">Page not found</h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
-        That URL doesn’t match anything here.
+        That URL doesn't match anything here.
       </p>
       <p className="mt-6">
         <Link to="/" className="btn btn-primary">
