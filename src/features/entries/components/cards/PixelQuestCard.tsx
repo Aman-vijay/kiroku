@@ -1,3 +1,4 @@
+import { SITE_NAME } from '#/lib/constants'
 import type { CardProps } from './types'
 
 export function PixelQuestCard({ title, body, date, username }: CardProps) {
@@ -91,7 +92,7 @@ export function PixelQuestCard({ title, body, date, username }: CardProps) {
           color: '#8a7fb8',
         }}
       >
-        <span>KIROKU</span>
+        <span>{SITE_NAME.toUpperCase()}</span>
         <span>@{username || 'player1'}</span>
       </div>
     </div>

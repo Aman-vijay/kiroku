@@ -1,3 +1,4 @@
+import { SITE_NAME } from '#/lib/constants'
 import type { CardProps } from './types'
 
 export function MinimalInkCard({ title, body, date, username }: CardProps) {
@@ -69,7 +70,7 @@ export function MinimalInkCard({ title, body, date, username }: CardProps) {
           color: '#5c586e',
         }}
       >
-        <span style={{ fontWeight: 600 }}>Kiroku</span>
+        <span style={{ fontWeight: 600 }}>{SITE_NAME}</span>
         <span>{username || 'daily log'}</span>
       </div>
     </div>

@@ -7,8 +7,8 @@ import {
 } from './templates'
 
 describe('templates', () => {
-  it('has three templates', () => {
-    expect(TEMPLATE_IDS).toHaveLength(3)
+  it('has seven templates', () => {
+    expect(TEMPLATE_IDS).toHaveLength(7)
   })
 
   it('parseTemplateId falls back to default', () => {

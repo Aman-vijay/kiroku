@@ -1,3 +1,4 @@
+import { SITE_NAME } from '#/lib/constants'
 import type { CardProps } from './types'
 
 export function ChibiDayCard({ title, body, date, username }: CardProps) {
@@ -88,7 +89,7 @@ export function ChibiDayCard({ title, body, date, username }: CardProps) {
           color: '#7a6f96',
         }}
       >
-        <span>Kiroku</span>
+        <span>{SITE_NAME}</span>
         <span>{username || 'you did great'}</span>
       </div>
     </div>
