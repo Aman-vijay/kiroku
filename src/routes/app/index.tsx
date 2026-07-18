@@ -1,12 +1,14 @@
+import { useEffect, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   EntryCardGrid,
   EntryEmptyState,
   StreakBadge,
-  computeStreak,
+  formatDisplayDate,
   todayLocalISO,
 } from '#/features/entries'
 import { getEntryByDate, listEntries } from '#/server/entries'
+import { useEntriesStore, useStreak } from '#/stores'
 
 export const Route = createFileRoute('/app/')({
   loader: async () => {
@@ -15,7 +17,8 @@ export const Route = createFileRoute('/app/')({
       listEntries({ data: { limit: 30 } }),
       getEntryByDate({ data: { entryDate: today } }),
     ])
-    return { entries, todayEntry, today }
+    const cursor = entries.length > 0 ? entries[entries.length - 1]?.entryDate ?? null : null
+    return { entries, todayEntry, today, cursor }
   },
   pendingComponent: DashboardPending,
   component: DashboardPage,
@@ -23,13 +26,16 @@ export const Route = createFileRoute('/app/')({
 
 function DashboardPending() {
   return (
-    <main className="page-wrap px-4 py-12 sm:py-14" aria-busy="true">
-      <div className="mb-8 h-10 w-48 animate-pulse rounded-[10px] bg-[var(--surface)]" />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {[0, 1, 2].map((i) => (
+    <main className="page-wrap px-4 py-10 sm:py-12" aria-busy="true">
+      <div className="mb-8 space-y-2">
+        <div className="h-4 w-32 animate-pulse rounded bg-[var(--surface)]" />
+        <div className="h-8 w-48 animate-pulse rounded-[10px] bg-[var(--surface)]" />
+      </div>
+      <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
-            className="aspect-[1080/1350] animate-pulse rounded-[14px] bg-[var(--surface)]"
+            className="aspect-[1080/1350] animate-pulse rounded-[14px] border border-[var(--line)] bg-[var(--surface)]"
           />
         ))}
       </div>
@@ -39,32 +45,49 @@ function DashboardPending() {
 
 function DashboardPage() {
   const { session } = Route.useRouteContext()
-  const { entries, todayEntry } = Route.useLoaderData()
+  const { entries, todayEntry, today, cursor } = Route.useLoaderData()
+  const storeHydrate = useEntriesStore((s) => s.hydrate)
+  const loadMore = useEntriesStore((s) => s.loadMore)
+  const storeEntries = useEntriesStore((s) => s.entries)
+  const storeTodayId = useEntriesStore((s) => s.todayEntryId)
+  const cursorVal = useEntriesStore((s) => s.cursor)
+  const loading = useEntriesStore((s) => s.loading)
+
+  // Hydrate store from SSR loader on mount + loader data change
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    storeHydrate(entries, todayEntry?.id ?? null, cursor)
+    setHydrated(true)
+  }, [entries, todayEntry?.id, cursor, storeHydrate])
+
   const user = session.user
   const firstName = user.name?.split(' ')[0] || 'there'
   const username = firstName
-  const streak = computeStreak(entries.map((e) => e.entryDate))
+  const streak = useStreak()
+  const displayEntries = hydrated ? storeEntries : entries
+  const todayId = hydrated ? storeTodayId : (todayEntry?.id ?? null)
+
+  const foundToday = todayId
+    ? displayEntries.find((e) => e.id === todayId)
+    : null
 
   return (
-    <main className="page-wrap px-4 py-12 sm:py-14">
-      <header className="fade-in mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <main className="page-wrap px-4 py-10 sm:py-12">
+      <header className="fade-in mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-1 text-sm font-medium text-[var(--muted)]">
-            Dashboard
+          <p className="text-sm font-medium text-[var(--muted)]">
+            {formatDisplayDate(today)}
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)]">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--ink)]">
             Hi, {firstName}
           </h1>
-          <p className="mt-1 max-w-md text-sm text-[var(--muted)]">
-            Your days as cards. One entry per calendar day.
-          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
           <StreakBadge streak={streak} compact />
-          {todayEntry ? (
+          {foundToday ? (
             <Link
               to="/app/entries/$entryId"
-              params={{ entryId: todayEntry.id }}
+              params={{ entryId: foundToday.id }}
               className="btn btn-primary shrink-0"
             >
               Edit today
@@ -77,27 +100,29 @@ function DashboardPage() {
         </div>
       </header>
 
-      {entries.length === 0 ? (
+      {displayEntries.length === 0 ? (
         <EntryEmptyState />
       ) : (
         <section aria-label="Your entries">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="m-0 text-sm font-semibold text-[var(--ink)]">
-              Your cards
-            </h2>
-            <span className="text-xs text-[var(--muted)]">
-              {entries.length} {entries.length === 1 ? 'day' : 'days'}
-            </span>
-          </div>
-          <EntryCardGrid entries={entries} username={username} />
+          <EntryCardGrid
+            entries={displayEntries}
+            username={username}
+            todayId={todayId}
+          />
+          {cursorVal ? (
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={loading}
+                onClick={() => void loadMore()}
+              >
+                {loading ? 'Loading…' : 'Load older'}
+              </button>
+            </div>
+          ) : null}
         </section>
       )}
-
-      <p className="mt-10 text-sm">
-        <Link to="/" className="font-medium text-[var(--primary)] no-underline">
-          ← Back home
-        </Link>
-      </p>
     </main>
   )
 }

@@ -8,23 +8,31 @@ describe('computeStreak', () => {
   })
 
   it('returns 1 for a single day', () => {
-    expect(computeStreak(['2026-07-15'])).toBe(1)
+    expect(computeStreak(['2026-07-15'], '2026-07-15')).toBe(1)
   })
 
   it('counts consecutive days ending at most recent', () => {
     expect(
-      computeStreak(['2026-07-15', '2026-07-14', '2026-07-13', '2026-07-10']),
+      computeStreak(['2026-07-17', '2026-07-16', '2026-07-15', '2026-07-10'], '2026-07-17'),
     ).toBe(3)
   })
 
   it('resets at a gap', () => {
-    expect(computeStreak(['2026-07-15', '2026-07-13'])).toBe(1)
+    expect(computeStreak(['2026-07-15', '2026-07-13'], '2026-07-15')).toBe(1)
   })
 
   it('dedupes and sorts', () => {
     expect(
-      computeStreak(['2026-07-13', '2026-07-15', '2026-07-15', '2026-07-14']),
+      computeStreak(['2026-07-15', '2026-07-17', '2026-07-17', '2026-07-16'], '2026-07-17'),
     ).toBe(3)
+  })
+
+  it('returns 0 when most recent entry is older than yesterday', () => {
+    expect(computeStreak(['2026-07-10', '2026-07-09'], '2026-07-17')).toBe(0)
+  })
+
+  it('counts streak when most recent is yesterday', () => {
+    expect(computeStreak(['2026-07-16', '2026-07-15'], '2026-07-17')).toBe(2)
   })
 })
 

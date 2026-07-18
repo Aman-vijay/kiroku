@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SITE_NAME } from '#/lib/constants'
 import {
   captureCardBlob,
   captureCardPng,
@@ -37,7 +38,7 @@ export function ShareActions({
     setBusy('download')
     try {
       const dataUrl = await captureCardPng(cardEl())
-      downloadDataUrl(dataUrl, `kiroku-${entryDate}.png`)
+      downloadDataUrl(dataUrl, `${SITE_NAME.toLowerCase()}-${entryDate}.png`)
       setMsg('PNG downloaded')
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Export failed')
@@ -51,19 +52,19 @@ export function ShareActions({
     setBusy('share')
     try {
       const blob = await captureCardBlob(cardEl())
-      const file = new File([blob], `kiroku-${entryDate}.png`, {
+      const file = new File([blob], `${SITE_NAME.toLowerCase()}-${entryDate}.png`, {
         type: 'image/png',
       })
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Kiroku',
+          title: SITE_NAME,
           text: `My day — ${entryDate}`,
         })
         setMsg('Shared')
       } else {
         const dataUrl = await captureCardPng(cardEl())
-        downloadDataUrl(dataUrl, `kiroku-${entryDate}.png`)
+        downloadDataUrl(dataUrl, `${SITE_NAME.toLowerCase()}-${entryDate}.png`)
         setMsg('Share not available — downloaded instead')
       }
     } catch (err) {

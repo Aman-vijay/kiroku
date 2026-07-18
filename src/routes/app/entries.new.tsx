@@ -5,6 +5,7 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { EntryForm, formatDisplayDate, todayLocalISO } from '#/features/entries'
+import { useEntriesStore, useDraftStore } from '#/stores'
 import { upsertEntry } from '#/server/entries'
 
 export const Route = createFileRoute('/app/entries/new')({
@@ -25,6 +26,8 @@ function NewEntryPage() {
   const { date } = Route.useSearch()
   const entryDate = date ?? todayLocalISO()
   const username = session.user.name?.split(' ')[0]
+  const storeUpsert = useEntriesStore((s) => s.upsert)
+  const draftClear = useDraftStore((s) => s.clear)
 
   return (
     <main className="page-wrap px-4 py-12 sm:py-14">
@@ -33,6 +36,20 @@ function NewEntryPage() {
         <h1 className="mb-1 text-2xl font-semibold tracking-tight text-[var(--ink)]">
           Log a day
         </h1>
+        <div className="mb-4 flex items-center gap-3">
+          <label className="flex items-center gap-2">
+            <span className="field-label mb-0">Pick a date:</span>
+            <input
+              type="date"
+              value={entryDate}
+              onChange={(e) => {
+                const d = e.target.value
+                if (d) navigate({ search: { date: d }, replace: true })
+              }}
+              className="field-input w-auto"
+            />
+          </label>
+        </div>
         <p className="mb-6 text-sm text-[var(--muted)]">
           {formatDisplayDate(entryDate)} · write + pick a card
         </p>
@@ -43,7 +60,7 @@ function NewEntryPage() {
             username={username}
             submitLabel="Save entry"
             onSubmit={async ({ title, body, templateId }) => {
-              await upsertEntry({
+              const result = await upsertEntry({
                 data: {
                   entryDate,
                   title: title || undefined,
@@ -51,6 +68,8 @@ function NewEntryPage() {
                   templateId,
                 },
               })
+              storeUpsert(result)
+              draftClear()
               await router.invalidate()
               await navigate({ to: '/app' })
             }}

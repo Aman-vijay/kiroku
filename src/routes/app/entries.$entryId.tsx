@@ -10,6 +10,7 @@ import {
   formatDisplayDate,
   parseTemplateId,
 } from '#/features/entries'
+import { useEntriesStore } from '#/stores'
 import { deleteEntry, getEntryById, updateEntry } from '#/server/entries'
 
 export const Route = createFileRoute('/app/entries/$entryId')({
@@ -27,6 +28,8 @@ function EditEntryPage() {
   const { session } = Route.useRouteContext()
   const { entry } = Route.useLoaderData()
   const username = session.user.name?.split(' ')[0]
+  const storeUpsert = useEntriesStore((s) => s.upsert)
+  const storeRemove = useEntriesStore((s) => s.remove)
 
   return (
     <main className="page-wrap px-4 py-12 sm:py-14">
@@ -52,7 +55,7 @@ function EditEntryPage() {
             }}
             submitLabel="Save changes"
             onSubmit={async ({ title, body, templateId }) => {
-              await updateEntry({
+              const result = await updateEntry({
                 data: {
                   id: entry.id,
                   title: title || null,
@@ -60,11 +63,13 @@ function EditEntryPage() {
                   templateId,
                 },
               })
+              storeUpsert(result)
               await router.invalidate()
               await navigate({ to: '/app' })
             }}
             onDelete={async () => {
               await deleteEntry({ data: { id: entry.id } })
+              storeRemove(entry.id)
               await router.invalidate()
               await navigate({ to: '/app' })
             }}

@@ -10,6 +10,7 @@ import {
   updateEntrySchema,
 } from '#/lib/validations/entry'
 import { requireSession } from './session'
+import { SHARE_SLUG_LENGTH } from '#/lib/constants'
 
 export type EntryDTO = {
   id: string
@@ -178,7 +179,7 @@ export const enableEntryShare = createServerFn({ method: 'POST' })
 
     if (!existing) throw new Error('Entry not found')
 
-    const shareSlug = existing.shareSlug ?? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+    const shareSlug = existing.shareSlug ?? crypto.randomUUID().replace(/-/g, '').slice(0, SHARE_SLUG_LENGTH)
     const [row] = await db
       .update(entry)
       .set({

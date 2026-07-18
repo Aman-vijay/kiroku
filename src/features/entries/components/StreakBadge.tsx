@@ -1,3 +1,5 @@
+import { IconFlame } from '@tabler/icons-react'
+
 type StreakBadgeProps = {
   streak: number
   compact?: boolean
@@ -5,16 +7,18 @@ type StreakBadgeProps = {
 
 export function StreakBadge({ streak, compact }: StreakBadgeProps) {
   if (compact) {
+    if (streak === 0) return null
     return (
-      <div
-        className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] px-3 py-2"
+      <span
+        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm font-medium text-[var(--ink)]"
         title="Consecutive days with an entry"
       >
-        <span className="text-xs font-medium text-[var(--muted)]">Streak</span>
-        <span className="text-base font-semibold tabular-nums text-[var(--ink)]">
-          {streak}
+        <IconFlame size={15} stroke={2} className="text-[var(--accent)]" aria-hidden />
+        <span className="tabular-nums">{streak}</span>
+        <span className="text-xs text-[var(--muted)]">
+          {streak === 1 ? 'day' : 'days'}
         </span>
-      </div>
+      </span>
     )
   }
 

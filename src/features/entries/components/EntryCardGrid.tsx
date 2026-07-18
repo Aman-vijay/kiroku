@@ -6,36 +6,40 @@ import { formatDisplayDate } from '../lib/dates'
 type EntryCardGridProps = {
   entries: EntryDTO[]
   username?: string
+  todayId?: string | null
 }
 
-export function EntryCardGrid({ entries, username }: EntryCardGridProps) {
+export function EntryCardGrid({ entries, username, todayId }: EntryCardGridProps) {
   if (entries.length === 0) return null
 
   return (
-    <ul className="m-0 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-3">
-      {entries.map((item) => (
-        <li key={item.id}>
-          <Link
-            to="/app/entries/$entryId"
-            params={{ entryId: item.id }}
-            className="group block no-underline outline-none"
-            aria-label={`Open entry ${formatDisplayDate(item.entryDate)}`}
-          >
-            <div className="overflow-hidden rounded-[14px] border border-[var(--line)] bg-[var(--bg)] transition-[border-color,box-shadow] duration-150 group-hover:border-[var(--primary)] group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-[var(--ring)]">
-              <div className="border-b border-[var(--line)] bg-[var(--surface)] px-3 py-2">
-                <time
-                  dateTime={item.entryDate}
-                  className="text-xs font-semibold text-[var(--ink)]"
-                >
-                  {formatDisplayDate(item.entryDate)}
-                </time>
-                {item.title ? (
-                  <p className="m-0 mt-0.5 truncate text-sm text-[var(--muted)]">
-                    {item.title}
-                  </p>
+    <ul className="m-0 grid list-none grid-cols-2 gap-4 p-0 sm:gap-5 lg:grid-cols-3">
+      {entries.map((item) => {
+        const isToday = item.id === todayId
+        return (
+          <li key={item.id}>
+            <Link
+              to="/app/entries/$entryId"
+              params={{ entryId: item.id }}
+              className="group block rounded-[14px] outline-none"
+              aria-label={`Open entry ${formatDisplayDate(item.entryDate)}`}
+            >
+              <div
+                className={[
+                  'relative overflow-hidden rounded-[14px] border bg-[var(--bg)]',
+                  'transition-[transform,border-color,box-shadow] duration-150 ease-out',
+                  'group-hover:-translate-y-0.5 group-hover:shadow-[0_2px_8px_oklch(0.2_0.02_285/0.08)]',
+                  'group-focus-visible:-translate-y-0.5',
+                  isToday
+                    ? 'border-[var(--primary)]'
+                    : 'border-[var(--line)] group-hover:border-[var(--primary)]',
+                ].join(' ')}
+              >
+                {isToday ? (
+                  <span className="absolute left-3 top-3 z-10 rounded-full bg-[var(--ink)] px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--bg)]">
+                    Today
+                  </span>
                 ) : null}
-              </div>
-              <div className="p-3">
                 <CardPreview
                   templateId={item.templateId}
                   title={item.title}
@@ -44,10 +48,10 @@ export function EntryCardGrid({ entries, username }: EntryCardGridProps) {
                   username={username}
                 />
               </div>
-            </div>
-          </Link>
-        </li>
-      ))}
+            </Link>
+          </li>
+        )
+      })}
     </ul>
   )
 }
