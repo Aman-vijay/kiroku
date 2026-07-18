@@ -12,10 +12,10 @@ export function Header() {
           className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-[var(--ink)] no-underline"
         >
           <span
-            className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-[var(--primary)] text-xs font-bold text-[var(--primary-fg)]"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-[var(--primary)] text-[0.72rem] font-bold text-[var(--primary-fg)]"
             aria-hidden
           >
-            K
+            記
           </span>
           {SITE_NAME}
         </Link>
