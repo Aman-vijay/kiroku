@@ -96,40 +96,65 @@ export const getEntryByDate = createServerFn({ method: 'GET' })
     return row ? toDTO(row) : null
   })
 
+export type UpsertEntryData = {
+  entryDate: string
+  title?: string | null
+  body: string
+  visibility?: 'private' | 'unlisted'
+  templateId?: string
+}
+
+/** Direct DB upsert used by the entry server fn and by task auto-sync. */
+export async function upsertEntryRow(
+  userId: string,
+  data: UpsertEntryData,
+): Promise<EntryDTO> {
+  const now = new Date()
+  const id = crypto.randomUUID()
+  const title = data.title ?? null
+  const visibility = data.visibility ?? 'private'
+  const templateId = data.templateId ?? 'minimal-ink'
+
+  const [row] = await db
+    .insert(entry)
+    .values({
+      id,
+      userId,
+      entryDate: data.entryDate,
+      title,
+      body: data.body,
+      visibility,
+      templateId,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [entry.userId, entry.entryDate],
+      set: {
+        title,
+        body: data.body,
+        visibility,
+        templateId,
+        updatedAt: now,
+      },
+    })
+    .returning()
+
+  if (!row) throw new Error('Failed to save entry')
+  return toDTO(row)
+}
+
 export const upsertEntry = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => createEntrySchema.parse(data))
   .handler(async ({ data }) => {
     const session = await requireSession()
-    const now = new Date()
-    const id = crypto.randomUUID()
-
-    const [row] = await db
-      .insert(entry)
-      .values({
-        id,
-        userId: session.user.id,
-        entryDate: data.entryDate,
-        title: data.title ?? null,
-        body: data.body,
-        visibility: data.visibility,
-        templateId: data.templateId,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [entry.userId, entry.entryDate],
-        set: {
-          title: data.title ?? null,
-          body: data.body,
-          visibility: data.visibility,
-          templateId: data.templateId,
-          updatedAt: now,
-        },
-      })
-      .returning()
-
-    if (!row) throw new Error('Failed to save entry')
-    return toDTO(row)
+    return upsertEntryRow(session.user.id, {
+      entryDate: data.entryDate,
+      title: data.title,
+      body: data.body,
+      visibility: data.visibility,
+      templateId: data.templateId,
+    })
   })
 
 export const updateEntry = createServerFn({ method: 'POST' })
