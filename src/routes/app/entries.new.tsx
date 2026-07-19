@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Link,
   createFileRoute,
@@ -5,6 +6,7 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { EntryForm, formatDisplayDate, todayLocalISO } from '#/features/entries'
+import { TaskPlanEditor } from '#/features/tasks'
 import { useEntriesStore, useDraftStore } from '#/stores'
 import { upsertEntry } from '#/server/entries'
 
@@ -19,6 +21,8 @@ export const Route = createFileRoute('/app/entries/new')({
   component: NewEntryPage,
 })
 
+type Tab = 'log' | 'plan'
+
 function NewEntryPage() {
   const navigate = useNavigate()
   const router = useRouter()
@@ -28,6 +32,7 @@ function NewEntryPage() {
   const username = session.user.name?.split(' ')[0]
   const storeUpsert = useEntriesStore((s) => s.upsert)
   const draftClear = useDraftStore((s) => s.clear)
+  const [tab, setTab] = useState<Tab>('log')
 
   return (
     <main className="page-wrap px-4 py-12 sm:py-14">
@@ -36,45 +41,78 @@ function NewEntryPage() {
         <h1 className="mb-1 text-2xl font-semibold tracking-tight text-[var(--ink)]">
           Log a day
         </h1>
-        <div className="mb-4 flex items-center gap-3">
-          <label className="flex items-center gap-2">
-            <span className="field-label mb-0">Pick a date:</span>
-            <input
-              type="date"
-              value={entryDate}
-              onChange={(e) => {
-                const d = e.target.value
-                if (d) navigate({ search: { date: d }, replace: true })
-              }}
-              className="field-input w-auto"
-            />
-          </label>
-        </div>
-        <p className="mb-6 text-sm text-[var(--muted)]">
-          {formatDisplayDate(entryDate)} · write + pick a card
-        </p>
 
-        <div className="panel p-5 sm:p-6">
-          <EntryForm
-            entryDate={entryDate}
-            username={username}
-            submitLabel="Save entry"
-            onSubmit={async ({ title, body, templateId }) => {
-              const result = await upsertEntry({
-                data: {
-                  entryDate,
-                  title: title || undefined,
-                  body,
-                  templateId,
-                },
-              })
-              storeUpsert(result)
-              draftClear()
-              await router.invalidate()
-              await navigate({ to: '/app' })
-            }}
-          />
+        {/* Tabs */}
+        <div className="segmented mt-4 mb-6 max-w-xs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'log'}
+            data-active={tab === 'log'}
+            className="segmented-item"
+            onClick={() => setTab('log')}
+          >
+            Log
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'plan'}
+            data-active={tab === 'plan'}
+            className="segmented-item"
+            onClick={() => setTab('plan')}
+          >
+            Plan
+          </button>
         </div>
+
+        {tab === 'plan' ? (
+          <div className="panel p-5 sm:p-6">
+            <TaskPlanEditor />
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 flex items-center gap-3">
+              <label className="flex items-center gap-2">
+                <span className="field-label mb-0">Pick a date:</span>
+                <input
+                  type="date"
+                  value={entryDate}
+                  onChange={(e) => {
+                    const d = e.target.value
+                    if (d) navigate({ search: { date: d }, replace: true })
+                  }}
+                  className="field-input w-auto"
+                />
+              </label>
+            </div>
+            <p className="mb-6 text-sm text-[var(--muted)]">
+              {formatDisplayDate(entryDate)} · write + pick a card
+            </p>
+
+            <div className="panel p-5 sm:p-6">
+              <EntryForm
+                entryDate={entryDate}
+                username={username}
+                submitLabel="Save entry"
+                onSubmit={async ({ title, body, templateId }) => {
+                  const result = await upsertEntry({
+                    data: {
+                      entryDate,
+                      title: title || undefined,
+                      body,
+                      templateId,
+                    },
+                  })
+                  storeUpsert(result)
+                  draftClear()
+                  await router.invalidate()
+                  await navigate({ to: '/app' })
+                }}
+              />
+            </div>
+          </>
+        )}
 
         <p className="mt-6 text-sm">
           <Link
