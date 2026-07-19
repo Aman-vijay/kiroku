@@ -1,20 +1,18 @@
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
+import { getRequiredEnv } from '#/lib/env'
 import * as schema from './schema'
 
-function getDatabaseUrl() {
-  const url = process.env.DATABASE_URL
-  if (!url) {
-    throw new Error(
-      'DATABASE_URL is not set. Add your Neon connection string to .env.local',
-    )
-  }
-  return url
-}
+const isServerRuntime = typeof window === 'undefined' || Boolean((import.meta as ImportMeta & { env?: { SSR?: boolean } }).env?.SSR)
 
-const sql = neon(getDatabaseUrl())
+const dbClient = isServerRuntime
+  ? drizzle({
+      client: neon(getRequiredEnv('DATABASE_URL')),
+      schema,
+    })
+  : undefined
 
 /** Shared Drizzle client (Neon HTTP). Safe for serverless / TanStack Start. */
-export const db = drizzle({ client: sql, schema })
+export const db = dbClient as any
 
 export { schema }
