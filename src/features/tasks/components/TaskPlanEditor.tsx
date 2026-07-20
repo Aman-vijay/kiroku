@@ -5,9 +5,11 @@ import {
   deleteTask,
   listTasksByDate,
   toggleTask,
+  updateTask,
 } from '#/server/task'
 import type { TaskDTO } from '#/server/task'
 import { TaskCard } from './TaskCard'
+import { TaskMinutesInput } from './TaskMinutesInput'
 import { CARD_W } from '#/lib/constants'
 import { formatDisplayDate, todayLocalISO } from '#/features/entries/lib/dates'
 
@@ -208,6 +210,24 @@ export function TaskPlanEditor() {
                   >
                     {t.title}
                   </span>
+                  {t.done ? (
+                    <TaskMinutesInput
+                      taskId={t.id}
+                      minutes={t.minutesSpent}
+                      onCommit={async (id, minutes) => {
+                        try {
+                          const updated = await updateTask({
+                            data: { id, minutesSpent: minutes },
+                          })
+                          setSavedTasks((prev) =>
+                            prev.map((x) => (x.id === id ? updated : x)),
+                          )
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    />
+                  ) : null}
                   <button
                     type="button"
                     onClick={async () => {

@@ -7,8 +7,9 @@ import {
   formatDisplayDate,
   todayLocalISO,
 } from '#/features/entries'
+import { TaskMinutesInput } from '#/features/tasks'
 import { getEntryByDate, listEntries } from '#/server/entries'
-import { listTasksByDate, toggleTask } from '#/server/task'
+import { listTasksByDate, toggleTask, updateTask } from '#/server/task'
 import {
   useEntriesStore,
   useStreak,
@@ -138,6 +139,12 @@ function DashboardPage() {
                 <span className="text-xs text-[var(--muted)]">
                   {displayTasks.filter((t) => t.done).length}/
                   {displayTasks.length} done
+                  {(() => {
+                    const mins = displayTasks
+                      .filter((t) => t.done && typeof t.minutesSpent === 'number')
+                      .reduce((s, t) => s + (t.minutesSpent ?? 0), 0)
+                    return mins > 0 ? ` · ${mins} min` : ''
+                  })()}
                 </span>
               ) : null}
             </div>
@@ -185,6 +192,18 @@ function DashboardPage() {
                   >
                     {t.title}
                   </span>
+                  {t.done ? (
+                    <TaskMinutesInput
+                      taskId={t.id}
+                      minutes={t.minutesSpent}
+                      onCommit={async (id, minutes) => {
+                        const updated = await updateTask({
+                          data: { id, minutesSpent: minutes },
+                        })
+                        taskUpsert(updated)
+                      }}
+                    />
+                  ) : null}
                 </li>
               ))}
             </ul>

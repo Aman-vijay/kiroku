@@ -58,3 +58,12 @@ export const useTasksStore = create<TasksState>((set, get) => ({
 export function useDoneCount() {
   return useTasksStore((s) => s.tasks.filter((t) => t.done).length)
 }
+
+/** Derived: total minutes spent across done tasks in the store (for one day). */
+export function useDayMinutes() {
+  return useTasksStore((s) =>
+    s.tasks
+      .filter((t) => t.done && typeof t.minutesSpent === 'number')
+      .reduce((sum, t) => sum + (t.minutesSpent ?? 0), 0),
+  )
+}
