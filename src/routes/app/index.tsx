@@ -7,11 +7,14 @@ import {
   formatDisplayDate,
   todayLocalISO,
 } from '#/features/entries'
+import { GoalTagSelect } from '#/features/goals'
 import { TaskMinutesInput } from '#/features/tasks'
 import { getEntryByDate, listEntries } from '#/server/entries'
 import { listTasksByDate, toggleTask, updateTask } from '#/server/task'
+import { listGoals } from '#/server/goal'
 import {
   useEntriesStore,
+  useGoalsStore,
   useStreak,
   useTasksStore,
 } from '#/stores'
@@ -19,13 +22,14 @@ import {
 export const Route = createFileRoute('/app/')({
   loader: async () => {
     const today = todayLocalISO()
-    const [entries, todayEntry, todayTasks] = await Promise.all([
+    const [entries, todayEntry, todayTasks, goals] = await Promise.all([
       listEntries({ data: { limit: 30 } }),
       getEntryByDate({ data: { entryDate: today } }),
       listTasksByDate({ data: { entryDate: today } }),
+      listGoals(),
     ])
     const cursor = entries.length > 0 ? entries[entries.length - 1]?.entryDate ?? null : null
-    return { entries, todayEntry, todayTasks, today, cursor }
+    return { entries, todayEntry, todayTasks, goals, today, cursor }
   },
   pendingComponent: DashboardPending,
   component: DashboardPage,
@@ -64,14 +68,17 @@ function DashboardPage() {
   const taskHydrate = useTasksStore((s) => s.hydrate)
   const taskUpsert = useTasksStore((s) => s.upsert)
   const storeTasks = useTasksStore((s) => s.tasks)
+  const goalsHydrate = useGoalsStore((s) => s.hydrate)
+  const storeGoals = useGoalsStore((s) => s.goals)
 
   // Hydrate store from SSR loader on mount + loader data change
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
     storeHydrate(entries, todayEntry?.id ?? null, cursor)
     taskHydrate(todayTasks)
+    goalsHydrate(goals)
     setHydrated(true)
-  }, [entries, todayEntry?.id, cursor, storeHydrate, todayTasks, taskHydrate])
+  }, [entries, todayEntry?.id, cursor, storeHydrate, todayTasks, taskHydrate, goals, goalsHydrate])
 
   const user = session.user
   const firstName = user.name?.split(' ')[0] || 'there'
@@ -79,6 +86,7 @@ function DashboardPage() {
   const streak = useStreak()
   const displayEntries = hydrated ? storeEntries : entries
   const displayTasks = hydrated ? storeTasks : todayTasks
+  const displayGoals = hydrated ? storeGoals : goals
   const todayId = hydrated ? storeTodayId : (todayEntry?.id ?? null)
 
   const foundToday = todayId
@@ -170,43 +178,98 @@ function DashboardPage() {
               to add what you want to get done today.
             </p>
           ) : (
-            <ul className="mt-3 space-y-1">
-              {displayTasks.map((t) => (
-                <li
-                  key={t.id}
-                  className="flex items-center gap-2 rounded-[10px] px-2 py-2 hover:bg-[var(--surface)]"
-                >
-                  <input
-                    type="checkbox"
-                    checked={t.done}
-                    onChange={async () => {
-                      const updated = await toggleTask({ data: { id: t.id } })
-                      taskUpsert(updated)
-                      await router.invalidate()
-                    }}
-                    className="h-4 w-4 cursor-pointer rounded border-[var(--line)] text-[var(--primary)] focus:ring-[var(--ring)]"
-                    aria-label={`Mark ${t.title} as ${t.done ? 'not done' : 'done'}`}
-                  />
-                  <span
-                    className={`flex-1 text-sm ${t.done ? 'text-[var(--muted)] line-through' : 'text-[var(--ink)]'}`}
-                  >
-                    {t.title}
-                  </span>
-                  {t.done ? (
-                    <TaskMinutesInput
-                      taskId={t.id}
-                      minutes={t.minutesSpent}
-                      onCommit={async (id, minutes) => {
-                        const updated = await updateTask({
-                          data: { id, minutesSpent: minutes },
-                        })
-                        taskUpsert(updated)
-                      }}
-                    />
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            (() => {
+              // Group today's tasks by goal, then ungrouped; preserve order.
+              const groups: { label: string; goalId: string | null }[] = []
+              const grouped: Record<string, typeof displayTasks> = {}
+              for (const t of displayTasks) {
+                const key = t.goalId ?? ''
+                if (!(key in grouped)) {
+                  groups.push({
+                    label: key
+                      ? displayGoals.find((g) => g.id === key)?.title ?? 'Goal'
+                      : 'Other',
+                    goalId: t.goalId,
+                  })
+                  grouped[key] = []
+                }
+                grouped[key]!.push(t)
+              }
+              return (
+                <div className="mt-3 space-y-4">
+                  {groups.map((grp) => (
+                    <div key={grp.goalId ?? 'other'}>
+                      {grp.goalId ? (
+                        <div className="mb-1 flex items-center justify-between">
+                          <Link
+                            to="/app/goals/$goalId"
+                            params={{ goalId: grp.goalId }}
+                            className="text-xs font-semibold text-[var(--primary)] no-underline"
+                          >
+                            {grp.label}
+                          </Link>
+                          <span className="text-[0.7rem] text-[var(--muted)]">
+                            ends{' '}
+                            {displayGoals.find((g) => g.id === grp.goalId)?.deadline}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                          {grp.label}
+                        </div>
+                      )}
+                      <ul className="space-y-1">
+                        {grouped[grp.goalId ?? '']!.map((t) => (
+                          <li
+                            key={t.id}
+                            className="flex items-center gap-2 rounded-[10px] px-2 py-2 hover:bg-[var(--surface)]"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={t.done}
+                              onChange={async () => {
+                                const updated = await toggleTask({ data: { id: t.id } })
+                                taskUpsert(updated)
+                                await router.invalidate()
+                              }}
+                              className="h-4 w-4 cursor-pointer rounded border-[var(--line)] text-[var(--primary)] focus:ring-[var(--ring)]"
+                              aria-label={`Mark ${t.title} as ${t.done ? 'not done' : 'done'}`}
+                            />
+                            <span
+                              className={`flex-1 text-sm ${t.done ? 'text-[var(--muted)] line-through' : 'text-[var(--ink)]'}`}
+                            >
+                              {t.title}
+                            </span>
+                            {t.done ? (
+                              <TaskMinutesInput
+                                taskId={t.id}
+                                minutes={t.minutesSpent}
+                                onCommit={async (id, minutes) => {
+                                  const updated = await updateTask({
+                                    data: { id, minutesSpent: minutes },
+                                  })
+                                  taskUpsert(updated)
+                                }}
+                              />
+                            ) : null}
+                            <GoalTagSelect
+                              goals={displayGoals}
+                              value={t.goalId}
+                              onChange={async (goalId) => {
+                                const updated = await updateTask({
+                                  data: { id: t.id, goalId },
+                                })
+                                taskUpsert(updated)
+                              }}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()
           )}
         </div>
       </section>

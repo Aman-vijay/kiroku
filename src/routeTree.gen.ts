@@ -14,6 +14,8 @@ import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
+import { Route as AppGoalsIndexRouteImport } from './routes/app/goals/index'
+import { Route as AppGoalsGoalIdRouteImport } from './routes/app/goals/$goalId'
 import { Route as AppEntriesNewRouteImport } from './routes/app/entries.new'
 import { Route as AppEntriesEntryIdRouteImport } from './routes/app/entries.$entryId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -43,6 +45,16 @@ const SSlugRoute = SSlugRouteImport.update({
   path: '/s/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppGoalsIndexRoute = AppGoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppGoalsGoalIdRoute = AppGoalsGoalIdRouteImport.update({
+  id: '/goals/$goalId',
+  path: '/goals/$goalId',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppEntriesNewRoute = AppEntriesNewRouteImport.update({
   id: '/entries/new',
   path: '/entries/new',
@@ -68,6 +80,8 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/entries/$entryId': typeof AppEntriesEntryIdRoute
   '/app/entries/new': typeof AppEntriesNewRoute
+  '/app/goals/$goalId': typeof AppGoalsGoalIdRoute
+  '/app/goals/': typeof AppGoalsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,6 +91,8 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/entries/$entryId': typeof AppEntriesEntryIdRoute
   '/app/entries/new': typeof AppEntriesNewRoute
+  '/app/goals/$goalId': typeof AppGoalsGoalIdRoute
+  '/app/goals': typeof AppGoalsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +104,8 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/entries/$entryId': typeof AppEntriesEntryIdRoute
   '/app/entries/new': typeof AppEntriesNewRoute
+  '/app/goals/$goalId': typeof AppGoalsGoalIdRoute
+  '/app/goals/': typeof AppGoalsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,6 +118,8 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/app/entries/$entryId'
     | '/app/entries/new'
+    | '/app/goals/$goalId'
+    | '/app/goals/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,6 +129,8 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/app/entries/$entryId'
     | '/app/entries/new'
+    | '/app/goals/$goalId'
+    | '/app/goals'
   id:
     | '__root__'
     | '/'
@@ -119,6 +141,8 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/app/entries/$entryId'
     | '/app/entries/new'
+    | '/app/goals/$goalId'
+    | '/app/goals/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -166,6 +190,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/goals/': {
+      id: '/app/goals/'
+      path: '/goals'
+      fullPath: '/app/goals/'
+      preLoaderRoute: typeof AppGoalsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/goals/$goalId': {
+      id: '/app/goals/$goalId'
+      path: '/goals/$goalId'
+      fullPath: '/app/goals/$goalId'
+      preLoaderRoute: typeof AppGoalsGoalIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/entries/new': {
       id: '/app/entries/new'
       path: '/entries/new'
@@ -194,12 +232,16 @@ interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppEntriesEntryIdRoute: typeof AppEntriesEntryIdRoute
   AppEntriesNewRoute: typeof AppEntriesNewRoute
+  AppGoalsGoalIdRoute: typeof AppGoalsGoalIdRoute
+  AppGoalsIndexRoute: typeof AppGoalsIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppEntriesEntryIdRoute: AppEntriesEntryIdRoute,
   AppEntriesNewRoute: AppEntriesNewRoute,
+  AppGoalsGoalIdRoute: AppGoalsGoalIdRoute,
+  AppGoalsIndexRoute: AppGoalsIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
