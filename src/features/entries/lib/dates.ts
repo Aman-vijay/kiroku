@@ -27,3 +27,18 @@ export function formatDisplayDate(iso: string): string {
     year: 'numeric',
   })
 }
+
+/** Whole days from `from` (YYYY-MM-DD, inclusive) to `to` (exclusive). */
+export function daysBetween(from: string, to: string): number {
+  const [fy, fm, fd] = from.split('-').map(Number)
+  const [ty, tm, td] = to.split('-').map(Number)
+  if (!fy || !fm || !fd || !ty || !tm || !td) return 0
+  const a = Date.UTC(fy, fm - 1, fd)
+  const b = Date.UTC(ty, tm - 1, td)
+  return Math.round((b - a) / 86_400_000)
+}
+
+/** Days from today (inclusive) until `deadline` (inclusive). ≥0 if today or later. */
+export function daysUntilDeadline(deadline: string): number {
+  return daysBetween(todayLocalISO(), deadline)
+}

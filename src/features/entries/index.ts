@@ -6,7 +6,7 @@ export { ShareActions } from './components/ShareActions'
 export { StreakBadge } from './components/StreakBadge'
 export { TemplatePicker } from './components/TemplatePicker'
 export { ShareCard } from './components/cards/ShareCard'
-export { formatDisplayDate, todayLocalISO } from './lib/dates'
+export { formatDisplayDate, todayLocalISO, daysUntilDeadline } from './lib/dates'
 export { computeStreak } from './lib/streak'
 export {
   DEFAULT_TEMPLATE_ID,

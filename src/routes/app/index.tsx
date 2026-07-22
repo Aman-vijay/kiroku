@@ -6,6 +6,7 @@ import {
   StreakBadge,
   formatDisplayDate,
   todayLocalISO,
+  daysUntilDeadline,
 } from '#/features/entries'
 import { GoalTagSelect } from '#/features/goals'
 import { TaskMinutesInput } from '#/features/tasks'
@@ -57,7 +58,7 @@ function DashboardPending() {
 function DashboardPage() {
   const router = useRouter()
   const { session } = Route.useRouteContext()
-  const { entries, todayEntry, todayTasks, today, cursor } = Route.useLoaderData()
+  const { entries, todayEntry, todayTasks, goals, today, cursor } = Route.useLoaderData()
   const storeHydrate = useEntriesStore((s) => s.hydrate)
   const loadMore = useEntriesStore((s) => s.loadMore)
   const storeEntries = useEntriesStore((s) => s.entries)
@@ -166,20 +167,75 @@ function DashboardPage() {
           </div>
 
           {displayTasks.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--muted)]">
-              No tasks planned yet. Open{' '}
-              <Link
-                to="/app/entries/new"
-                search={{ date: today }}
-                className="font-medium text-[var(--primary)] no-underline"
-              >
-                Plan
-              </Link>{' '}
-              to add what you want to get done today.
-            </p>
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-[var(--muted)]">
+                No tasks planned yet. Open{' '}
+                <Link
+                  to="/app/entries/new"
+                  search={{ date: today }}
+                  className="font-medium text-[var(--primary)] no-underline"
+                >
+                  Plan
+                </Link>{' '}
+                to add what you want to get done today.
+              </p>
+              <p className="text-xs text-[var(--muted)]">
+                Tip: you can group tasks under a{' '}
+                <Link
+                  to="/app/goals"
+                  className="font-medium text-[var(--primary)] no-underline"
+                >
+                  goal
+                </Link>{' '}
+                — optional, never required.
+              </p>
+            </div>
           ) : (
             (() => {
-              // Group today's tasks by goal, then ungrouped; preserve order.
+              // Flat list when there are no active goals; group by goal otherwise.
+              const activeGoals = displayGoals.filter((g) => g.status === 'active')
+              if (activeGoals.length === 0) {
+                return (
+                  <ul className="mt-3 space-y-1">
+                    {displayTasks.map((t) => (
+                      <li
+                        key={t.id}
+                        className="flex items-center gap-2 rounded-[10px] px-2 py-2 hover:bg-[var(--surface)]"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={t.done}
+                          onChange={async () => {
+                            const updated = await toggleTask({ data: { id: t.id } })
+                            taskUpsert(updated)
+                            await router.invalidate()
+                          }}
+                          className="h-4 w-4 cursor-pointer rounded border-[var(--line)] text-[var(--primary)] focus:ring-[var(--ring)]"
+                          aria-label={`Mark ${t.title} as ${t.done ? 'not done' : 'done'}`}
+                        />
+                        <span
+                          className={`flex-1 text-sm ${t.done ? 'text-[var(--muted)] line-through' : 'text-[var(--ink)]'}`}
+                        >
+                          {t.title}
+                        </span>
+                        {t.done ? (
+                          <TaskMinutesInput
+                            taskId={t.id}
+                            minutes={t.minutesSpent}
+                            onCommit={async (id, minutes) => {
+                              const updated = await updateTask({
+                                data: { id, minutesSpent: minutes },
+                              })
+                              taskUpsert(updated)
+                            }}
+                          />
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )
+              }
+              // Group by goal; untagged tasks fall under "Other".
               const groups: { label: string; goalId: string | null }[] = []
               const grouped: Record<string, typeof displayTasks> = {}
               for (const t of displayTasks) {
@@ -197,76 +253,87 @@ function DashboardPage() {
               }
               return (
                 <div className="mt-3 space-y-4">
-                  {groups.map((grp) => (
-                    <div key={grp.goalId ?? 'other'}>
-                      {grp.goalId ? (
-                        <div className="mb-1 flex items-center justify-between">
-                          <Link
-                            to="/app/goals/$goalId"
-                            params={{ goalId: grp.goalId }}
-                            className="text-xs font-semibold text-[var(--primary)] no-underline"
-                          >
-                            {grp.label}
-                          </Link>
-                          <span className="text-[0.7rem] text-[var(--muted)]">
-                            ends{' '}
-                            {displayGoals.find((g) => g.id === grp.goalId)?.deadline}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                          {grp.label}
-                        </div>
-                      )}
-                      <ul className="space-y-1">
-                        {grouped[grp.goalId ?? '']!.map((t) => (
-                          <li
-                            key={t.id}
-                            className="flex items-center gap-2 rounded-[10px] px-2 py-2 hover:bg-[var(--surface)]"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={t.done}
-                              onChange={async () => {
-                                const updated = await toggleTask({ data: { id: t.id } })
-                                taskUpsert(updated)
-                                await router.invalidate()
-                              }}
-                              className="h-4 w-4 cursor-pointer rounded border-[var(--line)] text-[var(--primary)] focus:ring-[var(--ring)]"
-                              aria-label={`Mark ${t.title} as ${t.done ? 'not done' : 'done'}`}
-                            />
-                            <span
-                              className={`flex-1 text-sm ${t.done ? 'text-[var(--muted)] line-through' : 'text-[var(--ink)]'}`}
+                  {groups.map((grp) => {
+                    const goal = grp.goalId
+                      ? displayGoals.find((g) => g.id === grp.goalId)
+                      : null
+                    const remaining = goal ? daysUntilDeadline(goal.deadline) : null
+                    return (
+                      <div key={grp.goalId ?? 'other'}>
+                        {grp.goalId ? (
+                          <div className="mb-1 flex items-center justify-between">
+                            <Link
+                              to="/app/goals/$goalId"
+                              params={{ goalId: grp.goalId }}
+                              className="text-xs font-semibold text-[var(--primary)] no-underline"
                             >
-                              {t.title}
+                              {grp.label}
+                            </Link>
+                            <span className="text-[0.7rem] text-[var(--muted)]">
+                              {remaining == null
+                                ? ''
+                                : remaining < 0
+                                  ? 'overdue'
+                                  : remaining === 0
+                                    ? 'ends today'
+                                    : `${remaining}d left`}
                             </span>
-                            {t.done ? (
-                              <TaskMinutesInput
-                                taskId={t.id}
-                                minutes={t.minutesSpent}
-                                onCommit={async (id, minutes) => {
+                          </div>
+                        ) : (
+                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                            {grp.label}
+                          </div>
+                        )}
+                        <ul className="space-y-1">
+                          {grouped[grp.goalId ?? '']!.map((t) => (
+                            <li
+                              key={t.id}
+                              className="flex items-center gap-2 rounded-[10px] px-2 py-2 hover:bg-[var(--surface)]"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={t.done}
+                                onChange={async () => {
+                                  const updated = await toggleTask({ data: { id: t.id } })
+                                  taskUpsert(updated)
+                                  await router.invalidate()
+                                }}
+                                className="h-4 w-4 cursor-pointer rounded border-[var(--line)] text-[var(--primary)] focus:ring-[var(--ring)]"
+                                aria-label={`Mark ${t.title} as ${t.done ? 'not done' : 'done'}`}
+                              />
+                              <span
+                                className={`flex-1 text-sm ${t.done ? 'text-[var(--muted)] line-through' : 'text-[var(--ink)]'}`}
+                              >
+                                {t.title}
+                              </span>
+                              {t.done ? (
+                                <TaskMinutesInput
+                                  taskId={t.id}
+                                  minutes={t.minutesSpent}
+                                  onCommit={async (id, minutes) => {
+                                    const updated = await updateTask({
+                                      data: { id, minutesSpent: minutes },
+                                    })
+                                    taskUpsert(updated)
+                                  }}
+                                />
+                              ) : null}
+                              <GoalTagSelect
+                                goals={displayGoals}
+                                value={t.goalId}
+                                onChange={async (goalId) => {
                                   const updated = await updateTask({
-                                    data: { id, minutesSpent: minutes },
+                                    data: { id: t.id, goalId },
                                   })
                                   taskUpsert(updated)
                                 }}
                               />
-                            ) : null}
-                            <GoalTagSelect
-                              goals={displayGoals}
-                              value={t.goalId}
-                              onChange={async (goalId) => {
-                                const updated = await updateTask({
-                                  data: { id: t.id, goalId },
-                                })
-                                taskUpsert(updated)
-                              }}
-                            />
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
                 </div>
               )
             })()

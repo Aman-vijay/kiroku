@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDaysISO, todayLocalISO } from './dates'
+import { addDaysISO, daysBetween, daysUntilDeadline, todayLocalISO } from './dates'
 import { computeStreak } from './streak'
 
 describe('computeStreak', () => {
@@ -44,5 +44,18 @@ describe('dates', () => {
   it('addDaysISO shifts calendar days', () => {
     expect(addDaysISO('2026-07-17', -1)).toBe('2026-07-16')
     expect(addDaysISO('2026-03-01', -1)).toBe('2026-02-28')
+  })
+
+  it('daysBetween counts whole days across months', () => {
+    expect(daysBetween('2026-07-17', '2026-07-20')).toBe(3)
+    expect(daysBetween('2026-07-31', '2026-08-02')).toBe(2)
+    expect(daysBetween('2026-07-20', '2026-07-17')).toBe(-3)
+  })
+
+  it('daysUntilDeadline uses today as the origin', () => {
+    const today = todayLocalISO()
+    expect(daysUntilDeadline(today)).toBe(0)
+    expect(daysUntilDeadline(addDaysISO(today, 5))).toBe(5)
+    expect(daysUntilDeadline(addDaysISO(today, -2))).toBe(-2)
   })
 })

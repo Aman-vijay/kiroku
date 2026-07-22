@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { GoalForm } from '#/features/goals'
-import { formatDisplayDate } from '#/features/entries'
+import { formatDisplayDate, daysUntilDeadline } from '#/features/entries'
 import { listGoals } from '#/server/goal'
 import { createGoal } from '#/server/goal'
 import { useGoalsStore } from '#/stores'
@@ -32,10 +32,21 @@ function GoalsPage() {
   return (
     <main className="page-wrap px-4 py-12 sm:py-14">
       <div className="fade-in mx-auto max-w-4xl">
-        <p className="mb-1 text-sm font-medium text-[var(--muted)]">Goals</p>
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-[var(--ink)]">
-          Your goals
-        </h1>
+        <div className="mb-2 flex items-center justify-between gap-4">
+          <div>
+            <p className="mb-1 text-sm font-medium text-[var(--muted)]">Goals</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)]">
+              Your goals
+            </h1>
+          </div>
+          <Link to="/app" className="text-sm font-medium text-[var(--primary)] no-underline">
+            ← Dashboard
+          </Link>
+        </div>
+        <p className="mb-6 max-w-xl text-sm text-[var(--muted)]">
+          Optional — tag tasks to a goal to track them under one deadline.
+          Logging and planning never require a goal.
+        </p>
 
         <div className="panel p-5 sm:p-6 mb-8">
           <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">
@@ -52,14 +63,21 @@ function GoalsPage() {
         </div>
 
         {displayGoals.length === 0 ? (
-          <p className="text-sm text-[var(--muted)]">
-            No goals yet. Create one above — a goal links your daily tasks
-            toward a deadline (up to 4 weeks out).
-          </p>
+          <div
+            className="panel-muted p-6 text-center"
+            style={{ background: 'var(--surface)' }}
+          >
+            <p className="text-sm text-[var(--muted)]">
+              No goals yet — that's fine. Create one above when you have a
+              deadline (like an interview or launch) and want to thread daily
+              tasks under it.
+            </p>
+          </div>
         ) : (
           <ul className="space-y-3">
             {displayGoals.map((g) => {
               const isActive = g.status === 'active'
+              const remaining = isActive ? daysUntilDeadline(g.deadline) : null
               return (
                 <li key={g.id}>
                   <Link
@@ -81,17 +99,28 @@ function GoalsPage() {
                           {formatDisplayDate(g.startDate)} → {formatDisplayDate(g.deadline)}
                         </p>
                       </div>
-                      <span
-                        className="shrink-0 rounded-full px-3 py-1 text-xs font-medium"
-                        style={{
-                          background: isActive
-                            ? 'color-mix(in oklab, var(--success) 14%, var(--bg))'
-                            : 'var(--surface)',
-                          color: isActive ? 'var(--success)' : 'var(--muted)',
-                        }}
-                      >
-                        {g.status}
-                      </span>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <span
+                          className="rounded-full px-3 py-1 text-xs font-medium"
+                          style={{
+                            background: isActive
+                              ? 'color-mix(in oklab, var(--success) 14%, var(--bg))'
+                              : 'var(--surface)',
+                            color: isActive ? 'var(--success)' : 'var(--muted)',
+                          }}
+                        >
+                          {g.status}
+                        </span>
+                        {remaining != null ? (
+                          <span className="text-[0.7rem] text-[var(--muted)]">
+                            {remaining < 0
+                              ? 'overdue'
+                              : remaining === 0
+                                ? 'ends today'
+                                : `${remaining}d left`}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </Link>
                 </li>
@@ -99,15 +128,6 @@ function GoalsPage() {
             })}
           </ul>
         )}
-
-        <p className="mt-6 text-sm">
-          <Link
-            to="/app"
-            className="font-medium text-[var(--primary)] no-underline"
-          >
-            ← Back to dashboard
-          </Link>
-        </p>
       </div>
     </main>
   )
