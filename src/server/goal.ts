@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, sql } from 'drizzle-orm'
 import { db } from '#/lib/db'
-import { goal } from '#/lib/db/schema'
+import { goal, task } from '#/lib/db/schema'
 import {
   createGoalSchema,
   goalIdSchema,
@@ -18,6 +18,11 @@ export type GoalDTO = {
   status: string
   createdAt: string
   updatedAt: string
+}
+
+export type GoalWithStatsDTO = GoalDTO & {
+  totalTasks: number
+  doneCount: number
 }
 
 function toDTO(row: typeof goal.$inferSelect): GoalDTO {
@@ -43,6 +48,47 @@ export const listGoals = createServerFn({ method: 'GET' }).handler(async () => {
 
   return rows.map(toDTO)
 })
+
+/** Goals with total/done task counts for progress rings and badges. */
+export const listGoalsWithStats = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const session = await requireSession()
+    const rows = await db
+      .select({
+        id: goal.id,
+        title: goal.title,
+        description: goal.description,
+        startDate: goal.startDate,
+        deadline: goal.deadline,
+        status: goal.status,
+        createdAt: goal.createdAt,
+        updatedAt: goal.updatedAt,
+        totalTasks: count(task.id),
+        doneCount: sql<number>`coalesce(sum(case when ${task.done} then 1 else 0 end), 0)::int`,
+      })
+      .from(goal)
+      .leftJoin(
+        task,
+        and(eq(task.goalId, goal.id), eq(task.userId, session.user.id)),
+      )
+      .where(eq(goal.userId, session.user.id))
+      .groupBy(goal.id)
+      .orderBy(desc(goal.createdAt))
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      startDate: String(row.startDate),
+      deadline: String(row.deadline),
+      status: row.status,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      totalTasks: Number(row.totalTasks) || 0,
+      doneCount: Number(row.doneCount) || 0,
+    })) satisfies GoalWithStatsDTO[]
+  },
+)
 
 export const getGoalById = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => goalIdSchema.parse(data))
