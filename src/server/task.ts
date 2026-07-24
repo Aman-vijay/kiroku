@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '#/lib/db'
 import { entry, task } from '#/lib/db/schema'
 import {
@@ -9,12 +10,44 @@ import {
   taskIdSchema,
   updateTaskSchema,
 } from '#/lib/validations/task'
+import { entryDateSchema } from '#/lib/validations/entry'
 import { upsertEntryRow } from './entries'
 import { requireSession } from './session'
+
+export type DailyAggregateDTO = {
+  entryDate: string
+  minutes: number
+  tasksDone: number
+}
+
+const dailyAggregatesSchema = z.object({
+  from: entryDateSchema,
+  to: entryDateSchema,
+})
 
 /** Line shape for a completed task inside the entry body. */
 export function taskLine(title: string) {
   return `- [x] ${title}`
+}
+
+/**
+ * Pure body transform for task ↔ entry auto-sync.
+ * Returns null when no write is needed (idempotent no-op).
+ */
+export function applyTaskLineToBody(
+  body: string,
+  title: string,
+  done: boolean,
+): string | null {
+  const line = taskLine(title)
+  if (done) {
+    if (body.includes(line)) return null
+    return body ? `${body}\n${line}` : line
+  }
+  const lines = body.split('\n')
+  const idx = lines.findIndex((l) => l.trim() === line)
+  if (idx === -1) return null
+  return [...lines.slice(0, idx), ...lines.slice(idx + 1)].join('\n').trim()
 }
 
 /** Append or remove a task line from today's entry body. */
@@ -30,34 +63,17 @@ export async function syncTaskToEntry(
     .where(and(eq(entry.userId, userId), eq(entry.entryDate, entryDate)))
     .limit(1)
 
-  const line = taskLine(title)
   const body = existing?.body ?? ''
+  const nextBody = applyTaskLineToBody(body, title, done)
+  if (nextBody === null) return
 
-  if (done) {
-    if (body.includes(line)) return
-    const nextBody = body ? `${body}\n${line}` : line
-    await upsertEntryRow(userId, {
-      entryDate,
-      title: existing?.title ?? null,
-      body: nextBody,
-      visibility: (existing?.visibility as 'private' | 'unlisted') ?? 'private',
-      templateId: existing?.templateId ?? 'minimal-ink',
-    })
-  } else {
-    const lines = body.split('\n')
-    const idx = lines.findIndex((l) => l.trim() === line)
-    if (idx === -1) return
-    const nextBody = [...lines.slice(0, idx), ...lines.slice(idx + 1)]
-      .join('\n')
-      .trim()
-    await upsertEntryRow(userId, {
-      entryDate,
-      title: existing?.title ?? null,
-      body: nextBody,
-      visibility: (existing?.visibility as 'private' | 'unlisted') ?? 'private',
-      templateId: existing?.templateId ?? 'minimal-ink',
-    })
-  }
+  await upsertEntryRow(userId, {
+    entryDate,
+    title: existing?.title ?? null,
+    body: nextBody,
+    visibility: (existing?.visibility as 'private' | 'unlisted') ?? 'private',
+    templateId: existing?.templateId ?? 'minimal-ink',
+  })
 }
 
 export type TaskDTO = {
@@ -228,4 +244,36 @@ export const deleteTask = createServerFn({ method: 'POST' })
 
     if (!row) throw new Error('Task not found')
     return { ok: true as const }
+  })
+
+/**
+ * Daily aggregates for the progress heatmap:
+ * SUM(minutesSpent) and COUNT of done tasks, grouped by entryDate.
+ */
+export const getDailyAggregates = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => dailyAggregatesSchema.parse(data))
+  .handler(async ({ data }) => {
+    const session = await requireSession()
+    const rows = await db
+      .select({
+        entryDate: task.entryDate,
+        minutes: sql<number>`coalesce(sum(${task.minutesSpent}), 0)::int`,
+        tasksDone: sql<number>`coalesce(sum(case when ${task.done} then 1 else 0 end), 0)::int`,
+      })
+      .from(task)
+      .where(
+        and(
+          eq(task.userId, session.user.id),
+          gte(task.entryDate, data.from),
+          lte(task.entryDate, data.to),
+        ),
+      )
+      .groupBy(task.entryDate)
+      .orderBy(asc(task.entryDate))
+
+    return rows.map((r) => ({
+      entryDate: String(r.entryDate),
+      minutes: Number(r.minutes) || 0,
+      tasksDone: Number(r.tasksDone) || 0,
+    })) satisfies DailyAggregateDTO[]
   })
