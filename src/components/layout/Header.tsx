@@ -43,6 +43,13 @@ export function Header() {
           >
             Goals
           </Link>
+          <Link
+            to="/app/progress"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            Progress
+          </Link>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
