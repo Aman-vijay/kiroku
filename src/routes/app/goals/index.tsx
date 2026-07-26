@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { GoalForm } from '#/features/goals'
+import { GoalForm, ProgressRing, StatusBadge } from '#/features/goals'
 import { formatDisplayDate, daysUntilDeadline } from '#/features/entries'
-import { listGoals } from '#/server/goal'
-import { createGoal } from '#/server/goal'
+import { computeGoalProgress } from '#/features/goals/lib/progress'
+import { createGoal, listGoalsWithStats } from '#/server/goal'
 import { useGoalsStore } from '#/stores'
 
 export const Route = createFileRoute('/app/goals/')({
   loader: async () => {
-    const goals = await listGoals()
+    const goals = await listGoalsWithStats()
     return { goals }
   },
   component: GoalsPage,
@@ -21,13 +21,40 @@ function GoalsPage() {
   const goalsUpsert = useGoalsStore((s) => s.upsert)
   const storeGoals = useGoalsStore((s) => s.goals)
   const [hydrated, setHydrated] = useState(false)
+  // Stats live on loader data; keep a local map for progress after create
+  const [stats, setStats] = useState(
+    () =>
+      new Map(
+        loaderGoals.map((g) => [
+          g.id,
+          { totalTasks: g.totalTasks, doneCount: g.doneCount },
+        ]),
+      ),
+  )
 
   useEffect(() => {
     goalsHydrate(loaderGoals)
+    setStats(
+      new Map(
+        loaderGoals.map((g) => [
+          g.id,
+          { totalTasks: g.totalTasks, doneCount: g.doneCount },
+        ]),
+      ),
+    )
     setHydrated(true)
   }, [loaderGoals, goalsHydrate])
 
-  const displayGoals = hydrated ? storeGoals : loaderGoals
+  const displayGoals = hydrated
+    ? storeGoals.map((g) => {
+        const s = stats.get(g.id)
+        return {
+          ...g,
+          totalTasks: s?.totalTasks ?? 0,
+          doneCount: s?.doneCount ?? 0,
+        }
+      })
+    : loaderGoals
 
   return (
     <main className="page-wrap px-4 py-12 sm:py-14">
@@ -39,16 +66,24 @@ function GoalsPage() {
               Your goals
             </h1>
           </div>
-          <Link to="/app" className="text-sm font-medium text-[var(--primary)] no-underline">
-            ← Dashboard
-          </Link>
+          <div className="flex items-center gap-3 text-sm">
+            <Link
+              to="/app/progress"
+              className="font-medium text-[var(--primary)] no-underline"
+            >
+              Progress
+            </Link>
+            <Link to="/app" className="font-medium text-[var(--primary)] no-underline">
+              ← Dashboard
+            </Link>
+          </div>
         </div>
         <p className="mb-6 max-w-xl text-sm text-[var(--muted)]">
           Optional — tag tasks to a goal to track them under one deadline.
           Logging and planning never require a goal.
         </p>
 
-        <div className="panel p-5 sm:p-6 mb-8">
+        <div className="panel mb-8 p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">
             Create a new goal
           </h2>
@@ -57,6 +92,11 @@ function GoalsPage() {
             onSubmit={async (values) => {
               const created = await createGoal({ data: values })
               goalsUpsert(created)
+              setStats((prev) => {
+                const next = new Map(prev)
+                next.set(created.id, { totalTasks: 0, doneCount: 0 })
+                return next
+              })
               await router.invalidate()
             }}
           />
@@ -68,7 +108,7 @@ function GoalsPage() {
             style={{ background: 'var(--surface)' }}
           >
             <p className="text-sm text-[var(--muted)]">
-              No goals yet — that's fine. Create one above when you have a
+              No goals yet — that&apos;s fine. Create one above when you have a
               deadline (like an interview or launch) and want to thread daily
               tasks under it.
             </p>
@@ -78,49 +118,52 @@ function GoalsPage() {
             {displayGoals.map((g) => {
               const isActive = g.status === 'active'
               const remaining = isActive ? daysUntilDeadline(g.deadline) : null
+              const progress = computeGoalProgress({
+                status: g.status,
+                startDate: g.startDate,
+                deadline: g.deadline,
+                totalTasks: g.totalTasks,
+                doneCount: g.doneCount,
+              })
               return (
                 <li key={g.id}>
                   <Link
                     to="/app/goals/$goalId"
                     params={{ goalId: g.id }}
-                    className="panel block p-5 no-underline transition-colors hover:bg-[var(--surface)]"
+                    className="panel flex items-center gap-4 p-5 no-underline transition-colors hover:bg-[var(--surface)]"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
+                    <ProgressRing
+                      percent={progress.percent}
+                      size={56}
+                      strokeWidth={5}
+                      label={`${g.title}: ${progress.percent}%`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-semibold text-[var(--ink)]">
                           {g.title}
                         </h3>
-                        {g.description ? (
-                          <p className="mt-1 text-sm text-[var(--muted)]">
-                            {g.description}
-                          </p>
-                        ) : null}
-                        <p className="mt-2 text-xs text-[var(--muted)]">
-                          {formatDisplayDate(g.startDate)} → {formatDisplayDate(g.deadline)}
+                        <StatusBadge status={progress.paceStatus} />
+                      </div>
+                      {g.description ? (
+                        <p className="mt-1 line-clamp-2 text-sm text-[var(--muted)]">
+                          {g.description}
                         </p>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1">
-                        <span
-                          className="rounded-full px-3 py-1 text-xs font-medium"
-                          style={{
-                            background: isActive
-                              ? 'color-mix(in oklab, var(--success) 14%, var(--bg))'
-                              : 'var(--surface)',
-                            color: isActive ? 'var(--success)' : 'var(--muted)',
-                          }}
-                        >
-                          {g.status}
-                        </span>
-                        {remaining != null ? (
-                          <span className="text-[0.7rem] text-[var(--muted)]">
-                            {remaining < 0
-                              ? 'overdue'
-                              : remaining === 0
-                                ? 'ends today'
-                                : `${remaining}d left`}
-                          </span>
-                        ) : null}
-                      </div>
+                      ) : null}
+                      <p className="mt-2 text-xs text-[var(--muted)]">
+                        {formatDisplayDate(g.startDate)} →{' '}
+                        {formatDisplayDate(g.deadline)}
+                        {g.totalTasks > 0
+                          ? ` · ${g.doneCount}/${g.totalTasks} tasks`
+                          : null}
+                        {remaining != null
+                          ? remaining < 0
+                            ? ' · overdue'
+                            : remaining === 0
+                              ? ' · ends today'
+                              : ` · ${remaining}d left`
+                          : null}
+                      </p>
                     </div>
                   </Link>
                 </li>
