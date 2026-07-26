@@ -11,12 +11,13 @@ import { useEntriesStore, useDraftStore } from '#/stores'
 import { upsertEntry } from '#/server/entries'
 
 export const Route = createFileRoute('/app/entries/new')({
-  validateSearch: (search: Record<string, unknown>) => {
+  // Optional search: omit `date` entirely when unset so `search={{}}` / bare Links type-check.
+  validateSearch: (search: Record<string, unknown>): { date?: string } => {
     const date =
       typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date)
         ? search.date
         : undefined
-    return { date }
+    return date ? { date } : {}
   },
   component: NewEntryPage,
 })

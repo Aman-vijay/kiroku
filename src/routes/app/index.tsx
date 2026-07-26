@@ -13,6 +13,9 @@ import { TaskMinutesInput } from '#/features/tasks'
 import { getEntryByDate, listEntries } from '#/server/entries'
 import { listTasksByDate, toggleTask, updateTask } from '#/server/task'
 import { listGoals } from '#/server/goal'
+import type { EntryDTO } from '#/server/entries'
+import type { TaskDTO } from '#/server/task'
+import type { GoalDTO } from '#/server/goal'
 import {
   useEntriesStore,
   useGoalsStore,
@@ -91,7 +94,7 @@ function DashboardPage() {
   const todayId = hydrated ? storeTodayId : (todayEntry?.id ?? null)
 
   const foundToday = todayId
-    ? displayEntries.find((e) => e.id === todayId)
+    ? displayEntries.find((e: EntryDTO) => e.id === todayId)
     : null
 
   return (
@@ -116,7 +119,11 @@ function DashboardPage() {
               Edit today
             </Link>
           ) : (
-            <Link to="/app/entries/new" className="btn btn-primary shrink-0">
+            <Link
+              to="/app/entries/new"
+              search={{}}
+              className="btn btn-primary shrink-0"
+            >
               Log today
             </Link>
           )}
@@ -144,14 +151,14 @@ function DashboardPage() {
               <h3 className="text-sm font-semibold text-[var(--ink)]">
                 Today's plan
               </h3>
-              {displayTasks.length > 0 ? (
+                {displayTasks.length > 0 ? (
                 <span className="text-xs text-[var(--muted)]">
-                  {displayTasks.filter((t) => t.done).length}/
+                  {displayTasks.filter((t: TaskDTO) => t.done).length}/
                   {displayTasks.length} done
                   {(() => {
                     const mins = displayTasks
-                      .filter((t) => t.done && typeof t.minutesSpent === 'number')
-                      .reduce((s, t) => s + (t.minutesSpent ?? 0), 0)
+                      .filter((t: TaskDTO) => t.done && typeof t.minutesSpent === 'number')
+                      .reduce((s: number, t: TaskDTO) => s + (t.minutesSpent ?? 0), 0)
                     return mins > 0 ? ` · ${mins} min` : ''
                   })()}
                 </span>
@@ -193,11 +200,11 @@ function DashboardPage() {
           ) : (
             (() => {
               // Flat list when there are no active goals; group by goal otherwise.
-              const activeGoals = displayGoals.filter((g) => g.status === 'active')
+              const activeGoals = displayGoals.filter((g: GoalDTO) => g.status === 'active')
               if (activeGoals.length === 0) {
                 return (
                   <ul className="mt-3 space-y-1">
-                    {displayTasks.map((t) => (
+                    {displayTasks.map((t: TaskDTO) => (
                       <li
                         key={t.id}
                         className="flex items-center gap-2 rounded-[10px] px-2 py-2 hover:bg-[var(--surface)]"
@@ -243,7 +250,7 @@ function DashboardPage() {
                 if (!(key in grouped)) {
                   groups.push({
                     label: key
-                      ? displayGoals.find((g) => g.id === key)?.title ?? 'Goal'
+                      ? displayGoals.find((g: GoalDTO) => g.id === key)?.title ?? 'Goal'
                       : 'Other',
                     goalId: t.goalId,
                   })
@@ -255,7 +262,7 @@ function DashboardPage() {
                 <div className="mt-3 space-y-4">
                   {groups.map((grp) => {
                     const goal = grp.goalId
-                      ? displayGoals.find((g) => g.id === grp.goalId)
+                      ? displayGoals.find((g: GoalDTO) => g.id === grp.goalId)
                       : null
                     const remaining = goal ? daysUntilDeadline(goal.deadline) : null
                     return (
@@ -285,7 +292,7 @@ function DashboardPage() {
                           </div>
                         )}
                         <ul className="space-y-1">
-                          {grouped[grp.goalId ?? '']!.map((t) => (
+                          {grouped[grp.goalId ?? '']!.map((t: TaskDTO) => (
                             <li
                               key={t.id}
                               className="flex items-center gap-2 rounded-[10px] px-2 py-2 hover:bg-[var(--surface)]"
