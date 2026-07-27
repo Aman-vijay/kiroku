@@ -16,7 +16,10 @@ The marketing landing (`/`) may lean slightly more expressive, but tokens, densi
 
 1. Sign in quickly  
 2. Write today’s progress (free text)  
-3. (Later) Choose a template card and share  
+3. Plan optional daily tasks (and tag them to a goal when useful)  
+4. Track goal pace (progress ring, on-track / behind / done / overdue)  
+5. Review a year-long activity heatmap and per-goal burndown  
+6. Choose a template card and share  
 
 ## Brand personality
 
