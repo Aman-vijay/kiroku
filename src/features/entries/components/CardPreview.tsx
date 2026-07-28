@@ -1,6 +1,4 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import type { TemplateId } from '#/lib/templates'
 import { CARD_W } from '#/lib/constants'
 import { ShareCard } from './cards/ShareCard'
 
@@ -46,24 +44,14 @@ export function CardPreview({
       style={{ ['--card-scale' as string]: String(scale) }}
     >
       <div className="card-canvas" id="share-card">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={templateId}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            style={{ width: '100%', height: '100%' }}
-          >
-            <ShareCard
-              templateId={templateId}
-              title={title}
-              body={body || 'Your day goes here…'}
-              date={date}
-              username={username}
-            />
-          </motion.div>
-        </AnimatePresence>
+        {/* ponytail: no motion opacity fade — SSR left cards at opacity:0 until hydrate */}
+        <ShareCard
+          templateId={templateId}
+          title={title}
+          body={body || 'Your day goes here…'}
+          date={date}
+          username={username}
+        />
       </div>
       {children}
     </div>
